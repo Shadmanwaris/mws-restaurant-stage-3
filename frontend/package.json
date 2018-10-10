@@ -1,0 +1,32 @@
+{
+  "name": "mws-restaurant-review-app",
+  "version": "1.0.0",
+  "description": "---\r #### _Three Stage Course Material Project - Restaurant Reviews_",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shadmanwaris/mws-restaurant-stage-2.git"
+  },
+  "author": "Shadman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shadmanwaris/mws-restaurant-stage-2/issues"
+  },
+  "homepage": "https://github.com/Shadmanwaris/mws-restaurant-stage-2#readme",
+  "devDependencies": {
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-clean-css": "^3.10.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-htmlclean": "^2.7.22",
+    "gulp-inject": "^4.3.2",
+    "gulp-uglify": "^3.0.1",
+    "gulp-webserver": "^0.9.1"
+  },
+  "dependencies": {
+    "idb": "^2.1.3"
+  }
+}
