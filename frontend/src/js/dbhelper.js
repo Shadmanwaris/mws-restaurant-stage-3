@@ -228,6 +228,46 @@ class DBHelper {
     return (`${restaurant.name}`);
   }
 
+  static markFavorite(id) {
+    fetch(`${DBHelper.DATABASE_URL}/${id}/?is_favorite=true`, {
+      method: 'PUT'
+    });
+    
+  }
+
+  static unMarkFavorite(id) {
+    fetch(`${DBHelper.DATABASE_URL}/${id}/?is_favorite=false`, {
+      method: 'PUT'
+    });
+  }
+
+  static fetchRestaurantReviewsById(id, callback) {
+    fetch(DBHelper.DATABASE_URL + `/reviews/?restaurant_id=${id}`)
+      .then(response => response.json())
+      .then(data => callback(null, data))
+      .catch(err => callback(err, null));
+  }
+
+  // http://localhost:1337/reviews/
+  static createRestaurantReview(id, name, rating, comments, callback) {
+    const data = {
+      'restaurant_id': id,
+      'name': name,
+      'rating': rating,
+      'comments': comments
+    };
+    fetch(DBHelper.DATABASE_URL + '/reviews/', {
+        headers: {
+          'Content-Type': 'application/form-data'
+        },
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => callback(null, data))
+      .catch(err => callback(err, null));
+  }
+
   /**
    * Map marker for a restaurant.
    */

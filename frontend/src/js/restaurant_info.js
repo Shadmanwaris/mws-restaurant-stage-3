@@ -104,6 +104,7 @@ fillRestaurantHTML = (restaurant = self.restaurant) => {
     fillRestaurantHoursHTML();
   }
   // fill reviews
+  DBHelper.fetchRestaurantReviewsById(restaurant.id, fillReviewsHTML);
   fillReviewsHTML();
 }
 
@@ -130,12 +131,28 @@ fillRestaurantHoursHTML = (operatingHours = self.restaurant.operating_hours) => 
 /**
  * Create all reviews HTML and add them to the webpage.
  */
-fillReviewsHTML = (reviews = self.restaurant.reviews) => {
-  const container = document.getElementById('reviews-container');
-  const title = document.createElement('h3');
-  title.innerHTML = 'Reviews';
-  container.appendChild(title);
+const fillReviewsHTML = (error, reviews) => {
+    self.restaurant.reviews = reviews;
 
+    if (error) {
+      console.log('Error retrieving reviews', error);
+    }
+  const header = document.getElementById('reviews-header');
+  header.innerHTML = '';
+
+  const title = document.createElement('h2');
+  title.innerHTML = 'Reviews';
+  header.appendChild(title);
+
+  const addReview = document.createElement('button');
+  addReview.classList.add('review-add-btn');
+  addReview.innerHTML = '+';
+  addReview.setAttribute('aria-label', 'add review');
+  addReview.title = 'Add Review';
+  addReview.addEventListener('click', toggleModal);
+  header.appendChild(addReview);
+
+  const container = document.getElementById('reviews-container');
   if (!reviews) {
     const noReviews = document.createElement('p');
     noReviews.innerHTML = 'No reviews yet!';
@@ -143,6 +160,8 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
     return;
   }
   const ul = document.getElementById('reviews-list');
+  ul.innerHTML = '';
+  reviews.reverse();
   reviews.forEach(review => {
     ul.appendChild(createReviewHTML(review));
   });
@@ -152,26 +171,37 @@ fillReviewsHTML = (reviews = self.restaurant.reviews) => {
 /**
  * Create review HTML and add it to the webpage.
  */
-createReviewHTML = (review) => {
+const createReviewHTML = (review) => {
   const li = document.createElement('li');
   const name = document.createElement('p');
   name.innerHTML = review.name;
   li.appendChild(name);
 
-  const date = document.createElement('p');
-  date.innerHTML = review.date;
-  li.appendChild(date);
+  const createdAt = document.createElement('p');
+  createdAt.classList.add('createdAt');
+  const createdDate = new Date(review.createdAt).toLocaleDateString();
+  createdAt.innerHTML = `Added:<strong>${createdDate}</strong>`;
+  li.appendChild(createdAt);
+
+  const updatedAt = document.createElement('p');
+  const updatedDate = new Date(review.updatedAt).toLocaleDateString();
+  updatedAt.innerHTML = `Updated:<strong>${updatedDate}</strong>`;
+  updatedAt.classList.add('updatedAt');
+  li.appendChild(updatedAt);
 
   const rating = document.createElement('p');
+  rating.classList.add('rating');
   rating.innerHTML = `Rating: ${review.rating}`;
+  rating.dataset.rating = review.rating;
   li.appendChild(rating);
 
   const comments = document.createElement('p');
+  comments.classList.add('comments');
   comments.innerHTML = review.comments;
   li.appendChild(comments);
 
   return li;
-}
+};
 
 /**
  * Add restaurant name to the breadcrumb navigation menu
@@ -198,3 +228,186 @@ getParameterByName = (name, url) => {
     return '';
   return decodeURIComponent(results[2].replace(/\+/g, ' '));
 }
+
+const toggleModal = (evt) => {
+  evt.preventDefault();
+  const modal = document.getElementById('modal');
+  modal.classList.toggle('show');
+};
+
+var focusedElementBeforeModal;
+const modal = document.getElementById('modal');
+const modalOverlay = document.querySelector('.modal-overlay');
+
+// Adapted from modal dialog sample code in Udacity Web Accessibility course 891
+const openModal = () => {
+  // Save current focus
+  focusedElementBeforeModal = document.activeElement;
+
+  // Listen for and trap the keyboard
+  modal.addEventListener('keydown', trapTabKey);
+
+  // Listen for indicators to close the modal
+  modalOverlay.addEventListener('click', closeModal);
+  // Close btn
+  const closeBtn = document.querySelector('.close-btn');
+  closeBtn.addEventListener('click', closeModal);
+
+  // submit form
+  const form = document.getElementById('review-form');
+  form.addEventListener('submit', saveAddReview, false);
+
+  // Find all focusable children
+  var focusableElementsString = 'a[href], area[href], input:not([disabled]),' +
+    'select:not([disabled]), textarea:not([disabled]), button:not([disabled]),' +
+    'iframe, object, embed, [tabindex="0"], [contenteditable]';
+  var focusableElements = modal.querySelectorAll(focusableElementsString);
+  // Convert NodeList to Array
+  focusableElements = Array.prototype.slice.call(focusableElements);
+
+  var firstTabStop = focusableElements[0];
+  var lastTabStop = focusableElements[focusableElements.length - 1];
+
+  // Show the modal and overlay
+  modal.classList.add('show');
+  modalOverlay.classList.add('show');
+
+  // Focus first child
+  // firstTabStop.focus();
+  const reviewName = document.getElementById('reviewName');
+  reviewName.focus();
+
+  function trapTabKey(e) {
+    // Check for TAB key press
+    if (e.keyCode === 9) {
+
+      // SHIFT + TAB
+      if (e.shiftKey) {
+        if (document.activeElement === firstTabStop) {
+          e.preventDefault();
+          lastTabStop.focus();
+        }
+
+        // TAB
+      } else {
+        if (document.activeElement === lastTabStop) {
+          e.preventDefault();
+          firstTabStop.focus();
+        }
+      }
+    }
+
+    // ESCAPE
+    if (e.keyCode === 27) {
+      closeModal();
+    }
+  }
+};
+
+const saveAddReview = (e) => {
+  e.preventDefault();
+
+  const name = document.querySelector('#reviewName').value;
+  const rating = document.querySelector('input[name=rate]:checked').value;
+  const comments = document.querySelector('#reviewComments').value;
+
+  // console.log(name);
+  // console.log(rating);
+  // console.log(comments);
+
+  DBHelper.createRestaurantReview(self.restaurant.id, name, rating, comments,
+    (error, review) => {
+      console.log('got callback');
+      if (error) {
+        console.log('Error saving review');
+      } else {
+        // do some other stuff
+        console.log(review);
+        window.location.href = `/restaurant.html?id=${self.restaurant.id}`;
+      }
+    });
+};
+
+const closeModal = () => {
+  // Hide the modal and overlay
+  modal.classList.remove('show');
+  modalOverlay.classList.remove('show');
+
+  const form = document.getElementById('review-form');
+  form.reset();
+  // Set focus back to element that had it before the modal was opened
+  focusedElementBeforeModal.focus();
+};
+
+const setFocus = (evt) => {
+  const rateRadios = document.getElementsByName('rate');
+  const rateRadiosArr = Array.from(rateRadios);
+  const anyChecked = rateRadiosArr.some(radio => {
+    return radio.checked === true;
+  });
+  if (!anyChecked) {
+    const star1 = document.getElementById('star1');
+    star1.focus();
+  }
+};
+
+// this code is done for proper a11y & keyboard nav
+const navRadioGroup = (evt) => {
+  const star1 = document.getElementById('star1');
+  const star2 = document.getElementById('star2');
+  const star3 = document.getElementById('star3');
+  const star4 = document.getElementById('star4');
+  const star5 = document.getElementById('star5');
+
+  if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(evt.key)) {
+    evt.preventDefault();
+    // console.log('attempting return');
+    if (evt.key === 'ArrowRight' || evt.key === 'ArrowDown') {
+      switch (evt.target.id) {
+        case 'star1':
+          star2.focus();
+          star2.checked = true;
+          break;
+        case 'star2':
+          star3.focus();
+          star3.checked = true;
+          break;
+        case 'star3':
+          star4.focus();
+          star4.checked = true;
+          break;
+        case 'star4':
+          star5.focus();
+          star5.checked = true;
+          break;
+        case 'star5':
+          star1.focus();
+          star1.checked = true;
+          break;
+      }
+    } else if (evt.key === 'ArrowLeft' || evt.key === 'ArrowUp') {
+      switch (evt.target.id) {
+        case 'star1':
+          star5.focus();
+          star5.checked = true;
+          break;
+        case 'star2':
+          star1.focus();
+          star1.checked = true;
+          break;
+        case 'star3':
+          star2.focus();
+          star2.checked = true;
+          break;
+        case 'star4':
+          star3.focus();
+          star3.checked = true;
+          break;
+        case 'star5':
+          star4.focus();
+          star4.checked = true;
+          break;
+      }
+    }
+  }
+};

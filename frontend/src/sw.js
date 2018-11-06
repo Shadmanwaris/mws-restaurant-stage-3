@@ -21,6 +21,7 @@ self.addEventListener('install', function (event) {
               '/img/8.jpg',
               '/img/10.jpg',
               '/manifest.json',
+              '/img/fixed/favorite5.png',
               'img/icons/icon-72x72.png',
               'img/icons/icon-96x96.png',
               'img/icons/icon-128x128.png',
@@ -36,6 +37,13 @@ self.addEventListener('install', function (event) {
 });
 
 self.addEventListener('fetch', function (event) {
+    const request = event.request;
+    const requestUrl = new URL(request.url);
+
+    // 1. filter Ajax Requests
+    if (requestUrl.port === '1337') {
+        event.respondWith(idbRestaurantResponse(request));
+    } else {
     event.respondWith(
         caches.match(event.request).then(function(resp) {
             if(resp) {
@@ -57,6 +65,7 @@ self.addEventListener('fetch', function (event) {
             }
         })
     );
+    }
 });
 
 
